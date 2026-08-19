@@ -8,9 +8,11 @@ function addTodo(todo) {
 }
 
 function listTodos() {
-    todos.forEach((todo, index) => {
-        console.log(`${index + 1}. ${todo.text}`);
-    });
+  todos.forEach((todo, index) => {
+    const status = todo.completed ? "Concluída" : "Pendente";
+
+    console.log(`${index + 1}. ${todo.text} - ${status}`);
+  });
 }
 
 function completeTodo(index) {
