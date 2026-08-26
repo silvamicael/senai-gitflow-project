@@ -15,6 +15,10 @@ function listTodos() {
     });
 }
 
+function completeTodo(index) {
+    todos[index].completed = true;
+}
+
 function removeTodo(index) {
     todos.splice(index, 1);
 }
