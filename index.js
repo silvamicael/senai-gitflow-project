@@ -24,7 +24,7 @@ function listByStatus(status) {
     todos.forEach((todo, index) => {
         const statusAtual = todo.completed ? "Concluída" : "Pendente";
 
-        if (statusAtual === "Pendente") {
+        if (statusAtual === status) {
             console.log(`${index + 1}. ${todo.text} - ${statusAtual}`);
         }
     });
