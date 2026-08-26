@@ -36,4 +36,4 @@ addTodo("Fazer atividade");
 addTodo("Criar Pull Request");
 
 completeTodo(1);
-removeTodo(3);
+removeTodo(1);
