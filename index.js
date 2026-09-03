@@ -9,8 +9,7 @@ function addTodo(todo) {
 
 function listTodos() {
     todos.forEach((todo, index) => {
-        const status = todo.completed ? "Concluída" : "Pendente";
-
+        const status = todo.completed ? "Concluida" : "Pendente";
         console.log(`${index + 1}. ${todo.text} - ${status}`);
     });
 }
@@ -23,21 +22,31 @@ function removeTodo(index) {
     todos.splice(index, 1);
 }
 
-// NOVA FUNCIONALIDADE
 function listByStatus(status) {
     todos.forEach((todo, index) => {
-        const statusAtual = todo.completed ? "Concluída" : "Pendente";
-
+        const statusAtual = todo.completed ? "Concluida" : "Pendente";
         if (statusAtual === status) {
             console.log(`${index + 1}. ${todo.text} - ${statusAtual}`);
         }
     });
 }
 
-// Dados para teste
-addTodo("Estudar Git");
-addTodo("Fazer atividade");
-addTodo("Criar Pull Request");
+module.exports = {
+    todos,
+    addTodo,
+    listTodos,
+    completeTodo,
+    removeTodo,
+    listByStatus
+};
 
-completeTodo(1);
-removeTodo(1);
+if (require.main === module) {
+    addTodo("Estudar Git");
+    addTodo("Fazer atividade");
+    addTodo("Criar Pull Request");
+
+    completeTodo(1);
+    removeTodo(1);
+
+    listTodos();
+}
