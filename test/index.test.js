@@ -5,7 +5,7 @@ const {
     completeTodo,
     removeTodo,
     listByStatus
-} = require('./index');
+} = require('../index');
 
 beforeEach(() => {
     todos.length = 0;
