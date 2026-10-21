@@ -1,13 +1,14 @@
 {
   "name": "senai-gitflow-project",
   "version": "1.0.0",
-  "description": "Aplicação de lista de tarefas (todo list) - projeto SENAI Gitflow",
+  "description": "API HTTP de lista de tarefas - projeto SENAI Gitflow",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node api.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "start:cli": "node index.js"
   },
   "devDependencies": {
     "jest": "^29.7.0"
