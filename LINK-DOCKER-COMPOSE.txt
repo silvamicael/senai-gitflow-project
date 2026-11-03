@@ -1,0 +1,10 @@
+ATIVIDADE SENAI - DOCKER COMPOSE
+
+Arquivo exigido: docker-compose.yml
+Repositorio: https://github.com/silvamicael/senai-gitflow-project
+Branch sugerida: feature/docker-compose-postgres
+
+LINK DO ARQUIVO (PUBLICAR ANTES DE ENTREGAR):
+https://github.com/silvamicael/senai-gitflow-project/blob/feature/docker-compose-postgres/docker-compose.yml
+
+OBS: O link acima e o endereco PREVISTO. Verifique no GitHub se abre apos dar git push.
