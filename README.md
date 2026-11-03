@@ -1,87 +1,137 @@
-# Task API | Node.js + PostgreSQL
+# Task API — Docker Compose + PostgreSQL
 
-API REST de tarefas, estruturada em **routes → services → repositories** e executada com **Docker Compose** em dois containers: `api` (Node.js) e `db` (PostgreSQL). Sem Nginx, controller ou middleware separado.
+API REST de gerenciamento de tarefas desenvolvida com Node.js, Express e PostgreSQL.
 
-## Organização
+O projeto utiliza Docker Compose para executar a aplicação e o banco de dados em containers separados, com arquitetura em camadas.
+
+## Tecnologias
+
+- Node.js e Express
+- PostgreSQL 17
+- Docker e Docker Compose
+- Node.js Test Runner
+- GitHub Actions
+
+## Estrutura do projeto
 
 ```text
-.
-├── src/
-│   ├── config/database.js             # Pool de conexões PostgreSQL
-│   ├── routes/taskRoutes.js           # Rotas e respostas HTTP
-│   ├── services/taskService.js        # Validação e regras de negócio
-│   ├── repositories/taskRepository.js # SQL parametrizado
-│   ├── app.js                         # Configuração da aplicação
-│   └── server.js                      # Inicialização do servidor
-├── tests/                             # Testes por camada
-├── database/init.sql                  # Criação inicial da tabela
-├── scripts/
-│   ├── cleanup-legacy.ps1             # Remove arquivos antigos do repositório
-│   └── test-compose.sh                # Teste real de comunicação entre containers
-├── .github/workflows/test.yml         # Testes automáticos no GitHub
-├── Dockerfile
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
-├── .dockerignore
-├── package.json
-├── LINK-DOCKER-COMPOSE.txt
-└── README.md
+src/
+├── config/
+│   └── database.js
+├── routes/
+│   └── taskRoutes.js
+├── services/
+│   └── taskService.js
+├── repositories/
+│   └── taskRepository.js
+├── app.js
+└── server.js
+
+database/
+└── init.sql
+
+tests/
+scripts/
+Dockerfile
+docker-compose.yml
+.env.example
+package.json
+README.md
 ```
 
-Arquivos **removidos**: `api.js`, `index.js`, `index.test.js` e `test/index.test.js` (legados da versão em memória). Não são usados por esta API.
+## Arquitetura
 
-## Inicialização
+A aplicação está dividida em três camadas:
 
-Requisitos: Docker Desktop com engine Linux. Na pasta que contém `docker-compose.yml`:
+- **Routes:** recebem requisições HTTP e retornam respostas.
+- **Services:** implementam validações e regras de negócio.
+- **Repositories:** executam operações SQL no PostgreSQL.
+
+A comunicação ocorre entre dois containers:
+
+**Cliente → API Node.js → PostgreSQL**
+
+O Docker Compose configura a rede interna automaticamente. A API acessa o banco pelo hostname `db`.
+
+## Executando com Docker
+
+Crie o arquivo de ambiente:
 
 ```powershell
 Copy-Item .env.example .env
-# Abra .env e troque a senha antes de iniciar.
-docker compose config --quiet
-docker compose up -d --build --wait
-docker compose ps
-Invoke-RestMethod http://localhost:3000/health
 ```
 
-Esperado: `{"status":"ok","database":"connected"}`. A API expõe a porta 3000; o banco só está acessível pela rede `backend` (`db:5432`). O volume `postgres_data` mantém os dados entre reinícios.
+Altere a senha de exemplo no `.env`.
+
+Inicie os containers:
+
+```powershell
+docker compose up -d --build --wait
+```
+
+Verifique os serviços:
+
+```powershell
+docker compose ps
+```
+
+Acesse:
+
+`http://localhost:3000`
 
 ## Endpoints
 
-| Método | Endpoint | Finalidade |
-| --- | --- | --- |
-| GET | `/health` | Confirma conexão API ↔ banco |
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/` | Informações da API |
+| GET | `/health` | Verifica API e banco |
 | GET | `/api/tarefas` | Lista tarefas |
-| GET | `/api/tarefas/:id` | Busca por ID |
-| GET | `/api/tarefas/status/Pendente` | Filtra pendentes |
-| GET | `/api/tarefas/status/Concluida` | Filtra concluídas |
-| POST | `/api/tarefas` | Cria tarefa com `{ "text": "Estudar" }` |
-| PATCH | `/api/tarefas/:id/concluir` | Conclui tarefa |
-| DELETE | `/api/tarefas/:id` | Apaga tarefa |
+| GET | `/api/tarefas/:id` | Consulta uma tarefa |
+| GET | `/api/tarefas/status/:status` | Filtra por status |
+| POST | `/api/tarefas` | Cria uma tarefa |
+| PATCH | `/api/tarefas/:id/concluir` | Conclui uma tarefa |
+| DELETE | `/api/tarefas/:id` | Remove uma tarefa |
 
-IDs são persistentes e não mudam quando uma tarefa é removida.
+Exemplo de criação:
+
+```json
+{
+  "text": "Estudar Docker Compose"
+}
+```
 
 ## Testes
+
+Para executar os testes automatizados:
 
 ```powershell
 npm install
 npm test
 ```
 
-Para testar a comunicação real, com os containers iniciados, use Git Bash/WSL:
+Para testar a comunicação real entre os containers, utilize o Git Bash:
 
 ```bash
 bash scripts/test-compose.sh
 ```
 
-O script confirma `/health`, criação e listagem de tarefa, acesso TCP do container `api` a `db:5432`, e dados depois de reiniciar a API. A pipeline `.github/workflows/test.yml` também roda testes e integração Docker.
+O script verifica a conexão com o banco, operações da API e persistência após reiniciar o container.
 
-## Atualizar seu repositório já publicado
+## Persistência
 
-1. A partir da branch `feature/docker-compose-postgres` já publicada, crie `refactor/cleanup-task-api`.
-2. Copie **o conteúdo** deste projeto para a raiz do repositório (substituindo os arquivos de mesmo nome).
-3. Na raiz do repositório, rode `./scripts/cleanup-legacy.ps1` no PowerShell para excluir arquivos antigos rastreados.
-4. Confira `git status` e `git diff --stat` antes de criar o commit. **Não apague o projeto `.git/`.**
-5. Rode os testes e publique sua branch para Pull Request.
+O banco PostgreSQL utiliza o volume `postgres_data`, garantindo que os registros continuem armazenados após reiniciar os containers.
 
-Veja `GUIA-ATIVIDADE.md` para os comandos completos e a entrega do professor.
+## Integração contínua
+
+O GitHub Actions executa os testes automatizados e os testes de integração usando Docker Compose.
+
+## Atividade SENAI
+
+O projeto demonstra:
+
+1. Comunicação entre containers.
+2. Docker Compose configurado.
+3. Arquitetura Routes, Services e Repositories.
+4. Organização e boas práticas.
+5. Testes automatizados.
+6. Persistência e integração dos serviços.
