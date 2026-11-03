@@ -1,7 +1,9 @@
+
 name: Tests
+
 on:
   push:
-    branches: [main, develop, "feature/**"]
+    branches: [main, develop, "feature/**", "refactor/**"]
   pull_request:
 
 jobs:
@@ -9,23 +11,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm install --no-audit --no-fund
+
+      - run: npm ci
       - run: npm test
 
   integration:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Create environment for CI
         run: cp .env.example .env
-      - name: Start two containers
+
+      - name: Start containers
         run: docker compose up -d --build --wait
-      - name: Check API and database communication
+
+      - name: Test container communication
         run: bash scripts/test-compose.sh
+
       - name: Stop containers
         if: always()
         run: docker compose down -v

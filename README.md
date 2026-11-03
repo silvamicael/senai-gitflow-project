@@ -1,87 +1,137 @@
-# API de Tarefas — Docker Compose + PostgreSQL
+# Task API — Docker Compose + PostgreSQL
 
-Atividade SENAI com **dois containers** (Node.js e PostgreSQL) e **três camadas** (`routes`, `services`, `repositories`). Sem Nginx, controllers ou middlewares próprios.
+API REST de gerenciamento de tarefas desenvolvida com Node.js, Express e PostgreSQL.
 
-## Estrutura
+O projeto utiliza Docker Compose para executar a aplicação e o banco de dados em containers separados, com arquitetura em camadas.
+
+## Tecnologias
+
+- Node.js e Express
+- PostgreSQL 17
+- Docker e Docker Compose
+- Node.js Test Runner
+- GitHub Actions
+
+## Estrutura do projeto
 
 ```text
 src/
-├── config/database.js
-├── routes/taskRoutes.js
-├── services/taskService.js
-├── repositories/taskRepository.js
+├── config/
+│   └── database.js
+├── routes/
+│   └── taskRoutes.js
+├── services/
+│   └── taskService.js
+├── repositories/
+│   └── taskRepository.js
 ├── app.js
 └── server.js
-database/init.sql
+
+database/
+└── init.sql
+
 tests/
-scripts/test-compose.sh
-docker-compose.yml
+scripts/
 Dockerfile
+docker-compose.yml
+.env.example
+package.json
+README.md
 ```
 
-## Executar (PowerShell)
+## Arquitetura
+
+A aplicação está dividida em três camadas:
+
+- **Routes:** recebem requisições HTTP e retornam respostas.
+- **Services:** implementam validações e regras de negócio.
+- **Repositories:** executam operações SQL no PostgreSQL.
+
+A comunicação ocorre entre dois containers:
+
+**Cliente → API Node.js → PostgreSQL**
+
+O Docker Compose configura a rede interna automaticamente. A API acessa o banco pelo hostname `db`.
+
+## Executando com Docker
+
+Crie o arquivo de ambiente:
 
 ```powershell
 Copy-Item .env.example .env
-# Edite .env e altere POSTGRES_PASSWORD antes de iniciar.
-docker compose config --quiet
-docker compose up -d --build --wait
-docker compose ps
-Invoke-RestMethod http://localhost:3000/health
 ```
+
+Altere a senha de exemplo no `.env`.
+
+Inicie os containers:
+
+```powershell
+docker compose up -d --build --wait
+```
+
+Verifique os serviços:
+
+```powershell
+docker compose ps
+```
+
+Acesse:
+
+`http://localhost:3000`
 
 ## Endpoints
 
-| Método | Rota | Objetivo |
-| --- | --- | --- |
-| GET | `/` | Documentação resumida |
-| GET | `/health` | Saúde API/banco |
-| GET | `/api/tarefas` | Listar |
-| GET | `/api/tarefas/:id` | Consultar por ID |
-| GET | `/api/tarefas/status/Pendente` | Filtrar pendentes |
-| GET | `/api/tarefas/status/Concluida` | Filtrar concluídas |
-| POST | `/api/tarefas` | Criar (`{"text":"Estudar"}`) |
-| PATCH | `/api/tarefas/:id/concluir` | Concluir |
-| DELETE | `/api/tarefas/:id` | Excluir |
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/` | Informações da API |
+| GET | `/health` | Verifica API e banco |
+| GET | `/api/tarefas` | Lista tarefas |
+| GET | `/api/tarefas/:id` | Consulta uma tarefa |
+| GET | `/api/tarefas/status/:status` | Filtra por status |
+| POST | `/api/tarefas` | Cria uma tarefa |
+| PATCH | `/api/tarefas/:id/concluir` | Conclui uma tarefa |
+| DELETE | `/api/tarefas/:id` | Remove uma tarefa |
 
-> **Mudança em relação ao projeto original:** as rotas de tarefas agora usam IDs persistentes (`:id`), em vez de índices transitórios (`:indice`). Os dados são salvos no PostgreSQL.
+Exemplo de criação:
 
-## Teste rápido (PowerShell)
-
-```powershell
-Invoke-RestMethod -Method POST -Uri http://localhost:3000/api/tarefas -ContentType 'application/json' -Body '{"text":"Estudar Docker"}'
-Invoke-RestMethod http://localhost:3000/api/tarefas
-Invoke-RestMethod http://localhost:3000/health
+```json
+{
+  "text": "Estudar Docker Compose"
+}
 ```
 
 ## Testes
+
+Para executar os testes automatizados:
 
 ```powershell
 npm install
 npm test
 ```
 
-Teste de integração real (Git Bash ou WSL), após `docker compose up`:
+Para testar a comunicação real entre os containers, utilize o Git Bash:
 
 ```bash
 bash scripts/test-compose.sh
 ```
 
-Os testes unitários não exigem banco, pois simulam as respostas das dependências. O script de integração exige Docker e PostgreSQL reais.
+O script verifica a conexão com o banco, operações da API e persistência após reiniciar o container.
 
-## Como demonstrar os containers
+## Persistência
 
-1. `docker compose ps` mostra `api` e `db`.
-2. `docker compose exec api node -e "require('node:net').connect(5432,'db').on('connect',()=>{console.log('OK');process.exit()})"` mostra que a API resolve o nome `db` e abre conexão TCP.
-3. `/health` confirma a consulta SQL com o PostgreSQL.
-4. Crie uma tarefa e liste-a.
-5. `docker compose restart api` e liste novamente para demonstrar persistência.
-6. `docker compose logs -f api db` mostra logs dos dois containers.
+O banco PostgreSQL utiliza o volume `postgres_data`, garantindo que os registros continuem armazenados após reiniciar os containers.
 
-A porta do PostgreSQL não é publicada no host; somente a API usa a rede interna `backend`.
+## Integração contínua
 
-## Entrega
+O GitHub Actions executa os testes automatizados e os testes de integração usando Docker Compose.
 
-Depois de fazer push da branch `feature/docker-compose-postgres`, copie a URL **real** do arquivo `docker-compose.yml` no GitHub para `LINK-DOCKER-COMPOSE.txt`. Não confunda URL local com URL publicada.
+## Atividade SENAI
 
-Veja também `GUIA-ATIVIDADE.md` para commits e roteiro da apresentação.
+O projeto demonstra:
+
+1. Comunicação entre containers.
+2. Docker Compose configurado.
+3. Arquitetura Routes, Services e Repositories.
+4. Organização e boas práticas.
+5. Testes automatizados.
+6. Persistência e integração dos serviços.
