@@ -1,58 +1,65 @@
-# API de Tarefas — Docker Compose + PostgreSQL
+# Task API | Node.js + PostgreSQL
 
-Atividade SENAI com **dois containers** (Node.js e PostgreSQL) e **três camadas** (`routes`, `services`, `repositories`). Sem Nginx, controllers ou middlewares próprios.
+API REST de tarefas, estruturada em **routes → services → repositories** e executada com **Docker Compose** em dois containers: `api` (Node.js) e `db` (PostgreSQL). Sem Nginx, controller ou middleware separado.
 
-## Estrutura
+## Organização
 
 ```text
-src/
-├── config/database.js
-├── routes/taskRoutes.js
-├── services/taskService.js
-├── repositories/taskRepository.js
-├── app.js
-└── server.js
-database/init.sql
-tests/
-scripts/test-compose.sh
-docker-compose.yml
-Dockerfile
+.
+├── src/
+│   ├── config/database.js             # Pool de conexões PostgreSQL
+│   ├── routes/taskRoutes.js           # Rotas e respostas HTTP
+│   ├── services/taskService.js        # Validação e regras de negócio
+│   ├── repositories/taskRepository.js # SQL parametrizado
+│   ├── app.js                         # Configuração da aplicação
+│   └── server.js                      # Inicialização do servidor
+├── tests/                             # Testes por camada
+├── database/init.sql                  # Criação inicial da tabela
+├── scripts/
+│   ├── cleanup-legacy.ps1             # Remove arquivos antigos do repositório
+│   └── test-compose.sh                # Teste real de comunicação entre containers
+├── .github/workflows/test.yml         # Testes automáticos no GitHub
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+├── .gitignore
+├── .dockerignore
+├── package.json
+├── LINK-DOCKER-COMPOSE.txt
+└── README.md
 ```
 
-## Executar (PowerShell)
+Arquivos **removidos**: `api.js`, `index.js`, `index.test.js` e `test/index.test.js` (legados da versão em memória). Não são usados por esta API.
+
+## Inicialização
+
+Requisitos: Docker Desktop com engine Linux. Na pasta que contém `docker-compose.yml`:
 
 ```powershell
 Copy-Item .env.example .env
-# Edite .env e altere POSTGRES_PASSWORD antes de iniciar.
+# Abra .env e troque a senha antes de iniciar.
 docker compose config --quiet
 docker compose up -d --build --wait
 docker compose ps
 Invoke-RestMethod http://localhost:3000/health
 ```
 
+Esperado: `{"status":"ok","database":"connected"}`. A API expõe a porta 3000; o banco só está acessível pela rede `backend` (`db:5432`). O volume `postgres_data` mantém os dados entre reinícios.
+
 ## Endpoints
 
-| Método | Rota | Objetivo |
+| Método | Endpoint | Finalidade |
 | --- | --- | --- |
-| GET | `/` | Documentação resumida |
-| GET | `/health` | Saúde API/banco |
-| GET | `/api/tarefas` | Listar |
-| GET | `/api/tarefas/:id` | Consultar por ID |
-| GET | `/api/tarefas/status/Pendente` | Filtrar pendentes |
-| GET | `/api/tarefas/status/Concluida` | Filtrar concluídas |
-| POST | `/api/tarefas` | Criar (`{"text":"Estudar"}`) |
-| PATCH | `/api/tarefas/:id/concluir` | Concluir |
-| DELETE | `/api/tarefas/:id` | Excluir |
+| GET | `/health` | Confirma conexão API ↔ banco |
+| GET | `/api/tarefas` | Lista tarefas |
+| GET | `/api/tarefas/:id` | Busca por ID |
+| GET | `/api/tarefas/status/Pendente` | Filtra pendentes |
+| GET | `/api/tarefas/status/Concluida` | Filtra concluídas |
+| POST | `/api/tarefas` | Cria tarefa com `{ "text": "Estudar" }` |
+| PATCH | `/api/tarefas/:id/concluir` | Conclui tarefa |
+| DELETE | `/api/tarefas/:id` | Apaga tarefa |
 
-> **Mudança em relação ao projeto original:** as rotas de tarefas agora usam IDs persistentes (`:id`), em vez de índices transitórios (`:indice`). Os dados são salvos no PostgreSQL.
-
-## Teste rápido (PowerShell)
-
-```powershell
-Invoke-RestMethod -Method POST -Uri http://localhost:3000/api/tarefas -ContentType 'application/json' -Body '{"text":"Estudar Docker"}'
-Invoke-RestMethod http://localhost:3000/api/tarefas
-Invoke-RestMethod http://localhost:3000/health
-```
+IDs são persistentes e não mudam quando uma tarefa é removida.
 
 ## Testes
 
@@ -61,27 +68,20 @@ npm install
 npm test
 ```
 
-Teste de integração real (Git Bash ou WSL), após `docker compose up`:
+Para testar a comunicação real, com os containers iniciados, use Git Bash/WSL:
 
 ```bash
 bash scripts/test-compose.sh
 ```
 
-Os testes unitários não exigem banco, pois simulam as respostas das dependências. O script de integração exige Docker e PostgreSQL reais.
+O script confirma `/health`, criação e listagem de tarefa, acesso TCP do container `api` a `db:5432`, e dados depois de reiniciar a API. A pipeline `.github/workflows/test.yml` também roda testes e integração Docker.
 
-## Como demonstrar os containers
+## Atualizar seu repositório já publicado
 
-1. `docker compose ps` mostra `api` e `db`.
-2. `docker compose exec api node -e "require('node:net').connect(5432,'db').on('connect',()=>{console.log('OK');process.exit()})"` mostra que a API resolve o nome `db` e abre conexão TCP.
-3. `/health` confirma a consulta SQL com o PostgreSQL.
-4. Crie uma tarefa e liste-a.
-5. `docker compose restart api` e liste novamente para demonstrar persistência.
-6. `docker compose logs -f api db` mostra logs dos dois containers.
+1. A partir da branch `feature/docker-compose-postgres` já publicada, crie `refactor/cleanup-task-api`.
+2. Copie **o conteúdo** deste projeto para a raiz do repositório (substituindo os arquivos de mesmo nome).
+3. Na raiz do repositório, rode `./scripts/cleanup-legacy.ps1` no PowerShell para excluir arquivos antigos rastreados.
+4. Confira `git status` e `git diff --stat` antes de criar o commit. **Não apague o projeto `.git/`.**
+5. Rode os testes e publique sua branch para Pull Request.
 
-A porta do PostgreSQL não é publicada no host; somente a API usa a rede interna `backend`.
-
-## Entrega
-
-Depois de fazer push da branch `feature/docker-compose-postgres`, copie a URL **real** do arquivo `docker-compose.yml` no GitHub para `LINK-DOCKER-COMPOSE.txt`. Não confunda URL local com URL publicada.
-
-Veja também `GUIA-ATIVIDADE.md` para commits e roteiro da apresentação.
+Veja `GUIA-ATIVIDADE.md` para os comandos completos e a entrega do professor.
